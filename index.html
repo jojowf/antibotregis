@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Verifikasi keamanan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.google.com/recaptcha/api.js?render=6LfZ1gItAAAAAM-VK4Hj5-2mu2HIXWus7wOP8mcm&hl=id"></script>
+
+<style>
+body {
+    margin: 0;
+    background: #f1f5fb;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.box {
+    background: white;
+    padding: 35px 25px;
+    width: 90%;
+    max-width: 380px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    background: #e8f0fe;
+    color: #1a73e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+h2 {
+    margin: 0 0 10px;
+    color: #202124;
+}
+
+p {
+    color: #5f6368;
+    line-height: 1.5;
+    margin: 0;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 22px;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+button:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+
+.note {
+    font-size: 11.5px;
+    color: #8a8f98;
+    margin-top: 15px;
+    line-height: 1.5;
+}
+
+.note a {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+/* Hilangkan logo badge reCAPTCHA v3 kanan bawah */
+.grecaptcha-badge {
+    visibility: hidden;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+    <div class="icon">✓</div>
+    <h2>Verifikasi keamanan</h2>
+    <p>Klik tombol di bawah untuk melanjutkan proses verifikasi.</p>
+
+    <button id="verifyBtn" onclick="submitCaptcha()">
+        Melanjutkan
+    </button>
+
+    <p class="note">
+        Situs ini dilindungi oleh reCAPTCHA dan berlaku
+        <a href="https://policies.google.com/privacy" target="_blank">Kebijakan Privasi</a>
+        serta
+        <a href="https://policies.google.com/terms" target="_blank">Persyaratan Layanan</a>
+        Google.
+    </p>
+</div>
+
+<script>
+const RECAPTCHA_SITE_KEY = "6LfZ1gItAAAAAM-VK4Hj5-2mu2HIXWus7wOP8mcm";
+const RECAPTCHA_ACTION = "verify";
+
+function getTrackingParams() {
+    const currentParams = new URLSearchParams(window.location.search);
+
+    const allowedParams = [
+        "ttclid",
+        "click_id",
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "utm_id",
+        "campaign_id",
+        "adgroup_id",
+        "ad_id"
+    ];
+
+    const params = {};
+
+    allowedParams.forEach(key => {
+        const value = currentParams.get(key);
+        if (value) {
+            params[key] = value;
+        }
+    });
+
+    return params;
+}
+
+function setButtonLoading(isLoading) {
+    const btn = document.getElementById("verifyBtn");
+    btn.disabled = isLoading;
+    btn.innerText = isLoading ? "Memverifikasi..." : "Melanjutkan";
+}
+
+function submitCaptcha() {
+    if (!window.grecaptcha) {
+        alert("reCAPTCHA belum siap. Silakan refresh halaman.");
+        return;
+    }
+
+    setButtonLoading(true);
+
+    grecaptcha.ready(function () {
+        grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: RECAPTCHA_ACTION })
+            .then(function (token) {
+                return fetch("/verify", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        params: getTrackingParams()
+                    })
+                });
+            })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
+
+                alert("Verifikasi gagal. Silakan coba lagi.");
+                setButtonLoading(false);
+            })
+            .catch(function () {
+                alert("Terjadi kesalahan server.");
+                setButtonLoading(false);
+            });
+    });
+}
+</script>
+
+</body>
+</html>
