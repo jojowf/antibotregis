@@ -25,16 +25,8 @@ export async function onRequestPost(context) {
 
     const result = await google.json();
 
-    if (!result.success || result.score < 0.5) {
-      return Response.json({
-        success: false
-      });
-    }
-
-    return Response.json({
-        success: true,
-        redirect: "https://example.com"
-    });
+    // DEBUG
+    return Response.json(result);
 
   } catch (err) {
     return Response.json({
